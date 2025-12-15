@@ -1,0 +1,143 @@
+[
+  {
+    "rank": 1,
+    "name": "FCIL - Opérateur de finition en ameublement",
+    "integration_rate": 0.75,
+    "integrations": 9,
+    "candidats": 0,
+    "propositions": 11,
+    "postulations": 12,
+    "ids": [
+      "46199"
+    ],
+    "integration_rate_pct": 75.0,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 2,
+    "name": "Licence - Lettres - Parcours Lettres Modernes - Enseignement / Humanités",
+    "integration_rate": 0.6818181818181818,
+    "integrations": 15,
+    "candidats": 21,
+    "propositions": 21,
+    "postulations": 22,
+    "ids": [
+      "13726"
+    ],
+    "integration_rate_pct": 68.1818,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 3,
+    "name": "Licence - Langues, littératures et civilisations étrangères et régionales - Parcours Asie du Sud et Himalaya -  Rromani",
+    "integration_rate": 0.6666666666666666,
+    "integrations": 2,
+    "candidats": 0,
+    "propositions": 3,
+    "postulations": 3,
+    "ids": [
+      "9406"
+    ],
+    "integration_rate_pct": 66.6667,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 4,
+    "name": "Formation des écoles supérieure d'art Bac + 3 - Dessinateur praticien",
+    "integration_rate": 0.5209302325581395,
+    "integrations": 224,
+    "candidats": 404,
+    "propositions": 404,
+    "postulations": 430,
+    "ids": [
+      "26202"
+    ],
+    "integration_rate_pct": 52.093,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 5,
+    "name": "BTS - Maritime - Maintenance des systèmes électro-navals - réservé aux Mises à Niveau",
+    "integration_rate": 0.46153846153846156,
+    "integrations": 12,
+    "candidats": 0,
+    "propositions": 21,
+    "postulations": 26,
+    "ids": [
+      "39848",
+      "39849"
+    ],
+    "integration_rate_pct": 46.1538,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 6,
+    "name": "Licence - Information et communication - Parcours Infographie et médias interactifs",
+    "integration_rate": 0.453125,
+    "integrations": 29,
+    "candidats": 36,
+    "propositions": 36,
+    "postulations": 64,
+    "ids": [
+      "14302"
+    ],
+    "integration_rate_pct": 45.3125,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 7,
+    "name": "Licence - Arts - Parcours Création numérique - Concepteur-réalisateur numérique - Options Animation 2D/Animation 3D-FX/Jeux vidéo/Illustration",
+    "integration_rate": 0.43359375,
+    "integrations": 111,
+    "candidats": 0,
+    "propositions": 256,
+    "postulations": 256,
+    "ids": [
+      "29219"
+    ],
+    "integration_rate_pct": 43.3594,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 8,
+    "name": "Conservation-restauration des biens culturels - spécialité Mobilier ",
+    "integration_rate": 0.42857142857142855,
+    "integrations": 3,
+    "candidats": 3,
+    "propositions": 3,
+    "postulations": 7,
+    "ids": [
+      "28361"
+    ],
+    "integration_rate_pct": 42.8571,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 9,
+    "name": "FCIL - Technicien motoriste option Mécanique Hors Bord",
+    "integration_rate": 0.42105263157894735,
+    "integrations": 8,
+    "candidats": 0,
+    "propositions": 18,
+    "postulations": 19,
+    "ids": [
+      "25700"
+    ],
+    "integration_rate_pct": 42.1053,
+    "integration_rate_denom": "postulations"
+  },
+  {
+    "rank": 10,
+    "name": "Licence - Musicologie - Parcours Musique et arts",
+    "integration_rate": 0.41333333333333333,
+    "integrations": 31,
+    "candidats": 52,
+    "propositions": 52,
+    "postulations": 75,
+    "ids": [
+      "23925"
+    ],
+    "integration_rate_pct": 41.3333,
+    "integration_rate_denom": "postulations"
+  }
+]
