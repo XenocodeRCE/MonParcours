@@ -1,0 +1,511 @@
+<!DOCTYPE html><html lang="fr"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulateur Terminale - Comparaison des Paires</title>
+    <style>
+        /* --- CSS --- */
+        :root {
+            --bg: #f8f9fa;
+            --text: #343a40;
+            --card-bg: #ffffff;
+            
+            /* Couleurs des paires (Style ONISEP) */
+            --color-pair-1: #f4c542; /* Jaune */
+            --color-pair-2: #d670d6; /* Violet */
+            --color-pair-3: #ed7d61; /* Orange */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            line-height: 1.5;
+        }
+
+        h1 { text-align: center; margin-bottom: 0.5rem; }
+        p.subtitle { text-align: center; color: #6c757d; margin-bottom: 2rem; }
+
+        /* Sélection des spécialités */
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .btn-spec {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .btn-spec:hover:not(:disabled) { border-color: #007bff; transform: translateY(-2px); }
+        
+        .btn-spec.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+        
+        .btn-spec:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Légende des paires */
+        .legend-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            min-height: 50px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: #eee;
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; display: inline-block; }
+        .dot.c1 { background-color: var(--color-pair-1); }
+        .dot.c2 { background-color: var(--color-pair-2); }
+        .dot.c3 { background-color: var(--color-pair-3); }
+
+        /* Résultats */
+        .results-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .domain-row {
+            display: flex;
+            flex-direction: column; /* Mobile first */
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        @media(min-width: 768px) {
+            .domain-row {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+
+        .domain-name {
+            flex: 0 0 30%;
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-right: 15px;
+        }
+
+        @media(min-width: 768px) { .domain-name { margin-bottom: 0; } }
+
+        .bars-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .bar-container {
+            display: flex;
+            align-items: center;
+            height: 18px;
+            width: 100%;
+            background-color: #f1f1f1;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.8s ease-out;
+        }
+
+        .bar-fill.p1 { background-color: var(--color-pair-1); }
+        .bar-fill.p2 { background-color: var(--color-pair-2); }
+        .bar-fill.p3 { background-color: var(--color-pair-3); }
+
+        .score-text {
+            font-size: 0.75rem;
+            margin-left: 8px;
+            color: #555;
+            min-width: 35px;
+        }
+
+        .alert-msg { text-align: center; font-weight: bold; padding: 1rem; color: #dc3545; }
+
+        .btn-details {
+            margin-top: 8px;
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .btn-details:hover { background: #0056b3; }
+
+        .domain-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .domain-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .recommendation-box {
+            background: linear-gradient(90deg, rgba(246,250,255,1) 0%, rgba(255,255,255,1) 100%);
+            border-left: 4px solid #007bff;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+            font-size: 0.95rem;
+        }
+
+        .recommendation-box .rec-list { margin-top: 6px; color: #444; font-size: 0.9rem; }
+
+        .rec-link {
+            background: none;
+            border: none;
+            color: #0056b3;
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 0;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Comparateur de Paires (Terminale)</h1>
+    <p class="subtitle">Choisissez 2 spécialités pour voir les combinaisons possibles.</p>
+
+    <div class="specs-grid" id="specs-container"></div>
+
+    <div id="legend-area" class="legend-container">
+        <!-- La légende sera injectée ici -->
+    </div>
+
+    <div class="results-section">
+        <div id="results-container">
+            <div class="alert-msg">Veuillez sélectionner 2 spécialités.</div>
+        </div>
+    </div>
+
+    <script>
+        // --- DONNÉES ---
+        const DOMAINES = [
+            "Arts & Industries culturelles", 
+            "Droit & Sciences politiques",   
+            "Lettres & Langues",             
+            "Santé",                         
+            "Sciences du vivant",            
+            "Sciences éco. & Gestion",
+            "Sciences humaines & Sociales",  
+            "Informatique & Numérique",      
+            "Sciences de l'ingénieur",       
+            "Sport"                          
+        ];
+
+        // Scores (0 à 6) pour chaque spécialité
+        const s = (...scores) => scores; 
+        const SPECIALITES = {
+            "arts": { label: "Arts Plastiques", scores: s(6, 2, 6, 2, 2, 2, 4, 2, 2, 4) },
+            "bio":  { label: "Biologie Écologie", scores: s(2, 2, 2, 6, 6, 2, 4, 4, 4, 2) },
+            "hggsp":{ label: "HGGSP (Histoire-Géo)", scores: s(4, 6, 6, 2, 2, 4, 6, 2, 2, 2) },
+            "hlp":  { label: "HLP (Humanités)", scores: s(4, 6, 6, 4, 2, 2, 6, 2, 2, 2) },
+            "llce": { label: "LLCE (Langues)", scores: s(4, 6, 6, 2, 2, 4, 4, 2, 2, 2) },
+            "llca": { label: "LLCA (Littérature Antique)", scores: s(6, 6, 6, 2, 2, 2, 4, 2, 2, 2) },
+            "maths":{ label: "Mathématiques", scores: s(2, 4, 2, 4, 4, 6, 4, 6, 6, 2) },
+            "nsi":  { label: "NSI (Numérique)", scores: s(4, 2, 2, 4, 4, 4, 2, 6, 6, 2) },
+            "pc":   { label: "Physique-Chimie", scores: s(2, 2, 2, 6, 6, 2, 2, 4, 6, 4) },
+            "si":   { label: "Sciences de l'Ingénieur", scores: s(2, 2, 2, 4, 4, 2, 2, 6, 6, 2) },
+            "svt":  { label: "SVT", scores: s(2, 2, 2, 6, 6, 2, 4, 4, 4, 4) },
+            "ses":  { label: "SES (Sciences Éco)", scores: s(4, 6, 6, 2, 2, 6, 6, 4, 2, 4) }
+        };
+
+        // Descriptions détaillées par domaine (présentation, diplômes, métiers)
+        const DOMAINES_INFO = {
+            "Arts & Industries culturelles": {
+                presentation: `Cet horizon peut intéresser particulièrement des élèves souhaitant s'investir dans les domaines du design, de la création et des arts. Les élèves choisissant cet horizon décident d'approfondir la pratique des disciplines artistiques concernées, mais aussi l'étude de leur histoire, de leurs métiers et/ou de leur économie.`,
+                diplomes: `Licences : arts ; arts plastiques ; arts du spectacle ; cinéma et audiovisuel ; histoire de l'art et archéologie ; musicologie… Et licences professionnelles : communication et valorisation de la création artistique ; gestion de projets et structures artistiques et culturels ; métiers de la médiation par des approches artistiques et culturelles ; métiers de la mode ; métiers du design ; métiers du jeu vidéo ; technique du son et de l'image...<br><br>DN MADE<br>Diplômes des écoles supérieures d'art et de design (DNA ; DNSEP art, communication ou design) ; diplômes des écoles écoles d'art appliqué (DSAA) ; diplômes des écoles d’architecture (DEEA puis DE architecte) ; diplômes des écoles du paysage (DE paysagiste) ; diplômes des écoles de musique, de danse, de théâtre, de cirque et des conservatoires nationaux supérieurs (DNSP comédien, musicien, danseur, artiste de cirque) ; diplômes de l’École du Louvre (diplôme de 1er cycle en histoire de l’art) ; diplôme de l’Institut national du patrimoine ; diplômes des écoles supérieures en audiovisuel (FEMIS, École Louis Lumière)<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT information-communication ; métiers du multimédia et de l’internet<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS conception de produits industriels ; métiers de l’audiovisuel ; photographie<br><br>DEUST formation de base aux métiers du théâtre ; DEUST théâtre<br>DUMI musicien intervenant<br>DE professeur de danse ; DE professeur de musique ; DE professeur de théâtre`,
+                metiers: `<ul><li>Animateur / Animatrice du patrimoine</li><li>Animateur / Animatrice 2D et 3D</li><li>Antiquaire</li><li>Architecte</li><li>Architecte d'intérieur</li><li>Assistant réalisateur / Assistante réalisatrice</li><li>Chargé / Chargée de production</li><li>Comédien / Comédienne</li><li>Commissaire priseur / Commissaire priseuse (ventes volontaires)</li><li>Concepteur / Conceptrice de jeux vidéo</li><li>Conservateur / Conservatrice du patrimoine</li><li>Costumier / Costumière</li><li>Danseur / Danseuse</li><li>Décorateur-scénographe / Décoratrice-scénographe</li><li>Designer produit</li><li>Dessinateur / Dessinatrice de BD</li><li>Illustrateur / Illustratrice</li><li>Médiateur culturel / Médiatrice culturelle</li><li>Mixeur / Mixeuse</li><li>Monteur / Monteuse</li><li>Motion designer</li><li>Musicien / Musicienne</li><li>Professeur / Professeure de danse, de musique</li><li>Régisseur / Régisseuse de spectacle</li><li>Régisseur général / Régisseuse générale de cinéma</li><li>Responsable de projet culturel</li><li>Restaurateur / Restauratrice d’art</li><li>Styliste</li><li>Webdesigner</li><li>...</li></ul>`
+            }
+        ,
+            "Droit & Sciences politiques": {
+                presentation: `Cet horizon rassemble l'étude de l'organisation et du fonctionnement des sociétés, du point de vue légal, politique et administratif. Il demande des compétences en expression écrite et orale, ainsi que des capacités d'analyse et de réflexion.`,
+                diplomes: `Licences : droit ; science politique ; administration publique… Licences professionnelles : activités juridiques ; métiers du notariat ; métiers des administrations et collectivités territoriales<br><br>Diplôme d'institut d'études politiques (IEP)<br>Classes préparatoires aux grandes écoles<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT carrières juridiques ; BUT gestion des entreprises et des administrations…<br><br>BTS collaborateur juriste notarial (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels)<br>...`,
+                metiers: `<ul><li>Administrateur / Administratrice de biens</li><li>Assistant / Assistante en RH (ressources humaines)</li><li>Attaché / Attachée d’administration</li><li>Avocat / Avocate</li><li>Collaborateur / Collaboratrice actes courants</li><li>Collaborateur / Collaboratrice de commissaire de justice</li><li>Collaborateur / Collaboratrice de notaire</li><li>Commissaire de justice</li><li>Commissaire-priseur / Commissaire-priseuse (ventes volontaires)</li><li>Conseiller / Conseillère pénitentiaire d'insertion et de probation</li><li>Diplomate</li><li>Directeur / Directrice des services pénitentiaires</li><li>Éducateur / Éducatrice de la protection judiciaire de la jeunesse</li><li>Greffier / Greffière</li><li>Juriste d'entreprise</li><li>Juge</li><li>Magistrat / Magistrate</li><li>Notaire</li><li>Officier / Officière de police</li><li>Rédacteur territorial / Rédactrice territoriale</li><li>Responsable de ressources humaines</li><li>Secrétaire juridique</li><li>...</li></ul>`
+            }
+        ,
+            "Informatique & Numérique": {
+                presentation: `Cet horizon est tourné vers une connaissance poussée des sciences du numérique, qu'elles soient fondamentales ou appliquées. Afin d'obtenir le niveau de technicité visé, les élèves intégrant cet horizon doivent avoir des connaissances en informatique et en manipulation de données chiffrées. Un goût pour la résolution de problèmes et la réflexion est un atout.`,
+                diplomes: `Licences : informatique ; mathématiques ; mathématiques et informatiques appliquées aux sciences humaines et sociales… Et licences professionnelles métiers de l'informatique ; métiers des réseaux informatiques et télécommunication<br><br>Écoles d'ingénieurs, écoles d'informatique, écoles de statistique<br>Classes préparatoires scientifiques<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT informatique ; sciences des données ; réseaux et télécommunications ; métiers du multimédia et de l’Internet ; génie électrique et informatique industrielle…<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS cybersécurité, informatique et réseaux, électronique ; services informatiques aux organisations ; contrôle industriel et régulation automatique<br><br>DEUST infrastructures numériques ; informatique d'organisation et systèmes d'information ; systèmes d'information et réseaux, gestion et développement ; webmaster et métiers de l'internet<br>...`,
+                metiers: `<ul><li>Actuaire</li><li>Administrateur / Administratrice de bases de données</li><li>Administrateur / Administratrice de réseaux</li><li>Architecte Web</li><li>Bio-informaticien / Bio-informaticienne</li><li>Chef / Cheffe de projet informatique</li><li>Consultant / Consultante green IT</li><li>Data scientist</li><li>Développeur / Développeuse informatique</li><li>Expert / Experte en sécurité informatique</li><li>Ingénieur / Ingénieure en intelligence artificielle</li><li>Professeur / Professeure des écoles ; Professeur / Professeure de collège et de lycée</li><li>Technicien / Technicienne de maintenance informatique</li><li>...</li></ul>`
+            }
+        ,
+            "Lettres & Langues": {
+                presentation: `Cet horizon rassemble les formations liées à la création littéraire sous toutes ses formes. Un goût marqué pour l’écriture, la lecture, l'analyse, la réflexion et l'étude des langues est nécessaire pour réussir dans cet horizon, ainsi que des compétences en expression écrite et orale et des qualités de curiosité et d'ouverture culturelle.`,
+                diplomes: `Licences : information-communication ; sciences du langage ; LLCER (langues, littératures et civilisations étrangères et régionales) ; LEA (langues étrangères appliquées) ; lettres… Licences professionnelles : guide conférencier ; métiers de la communication ; métiers de la médiation par des approches artistiques et culturelles ; métiers du livre<br><br>Classes préparatoires aux grandes écoles et aux écoles normales supérieures<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT information-communication ; techniques de commercialisation ; métiers du multimédia et de l’internet…<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS communication ; édition ; études de réalisation d'un projet de communication ; commerce international<br><br>DEUST métiers des bibliothèques et de la documentation<br>Diplôme d'institut d'études politiques (IEP)<br>...`,
+                metiers: `<ul><li>Archiviste</li><li>Assistant / Assistante de publicité</li><li>Attaché / Attachée de presse</li><li>Bibliothécaire</li><li>Chargé / Chargée de communication interne</li><li>Chargé / Chargée de projet événementiel</li><li>Chargé / Chargée des relations publiques</li><li>Chercheur / Chercheuse en linguistique</li><li>Community manager</li><li>Concepteur-rédacteur / Conceptrice-rédactrice</li><li>Directeur / Directrice de bibliothèque-médiathèque</li><li>Documentaliste</li><li>Guide-conférencier / Guide-conférencière</li><li>Iconographe</li><li>Interprète</li><li>Journaliste</li><li>Libraire</li><li>Média acheteur / acheteuse</li><li>Média planneur (Chargé / Chargée d’études média)</li><li>Professeur / Professeure des écoles ; Professeur / Professeure de collège et de lycée</li><li>Responsable e-CRM</li><li>Secrétaire d'édition</li><li>Traducteur / Traductrice interprète</li><li>...</li></ul>`
+            }
+        ,
+            "Santé": {
+                presentation: `Cet horizon rassemble les formations centrées sur la santé et le bien-être, tant du point de vue médical que social. Il est destiné à des élèves ayant un intérêt pour les sciences, les sciences humaines et sociales et un goût pour les relations humaines.`,
+                diplomes: `Licences : parcours d'accès spécifique santé (PASS) ; licence avec option accès santé (L.AS) ; sciences pour la santé ; STAPS ; sciences sanitaires et sociales… Et licences professionnelles : industries pharmaceutiques, cosmétologiques et de santé<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT génie biologique ; carrières sociales…<br><br>Études paramédicales : DE infirmier, masseur-kinésithérapeute, psychomotricien, ergothérapeute, audioprothésiste, pédicure-podologue… ; CC orthoptiste ; DTS imagerie médicale et radiologie thérapeutique ; DE de manipulateur d'électroradiologie médicale…<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS bioanalyses en laboratoire de contrôle ; biologie médicale ; prothésiste dentaire ; podo-orthésiste ; orthoprothésiste ; opticien-lunetier ; services et prestations des secteurs sanitaire et social ; économie sociale familiale ; métiers de l'esthétique, de la cosmétique et de la parfumerie ; diététique et nutrition<br>...`,
+                metiers: `<ul><li>Assistant / Assistante de service social</li><li>Chirurgien-dentaire / Chirurgienne-dentaire</li><li>Diététicien / Diététicienne</li><li>Éducateur spécialisé / Éducatrice spécialisée</li><li>Infirmier / Infirmière</li><li>Manipulateur / Manipulatrice en électroradiologie médicale</li><li>Masseur / Masseuse-kinésithérapeute</li><li>Médecin</li><li>Orthophoniste</li><li>Pharmacien / Pharmacienne</li><li>Orthoprothésiste</li><li>Sage-femme</li><li>Technicien / Technicienne d'analyses biomédicales</li><li>...</li></ul>`
+            }
+        ,
+            "Sciences du vivant": {
+                presentation: `Cet horizon rassemble les formations axées sur la connaissance du monde naturel tant en biologie qu’en géologie. Ces formations scientifiques construisent les concepts scientifiques structurant les sciences du vivant, comme les géosciences, tout en soulignant leur contribution aux grands enjeux contemporains, au développement durable et aux grandes questions éthiques concernant des domaines aussi variés que l’alimentation, la santé, l’exploitation des ressources naturelles et la protection de l’environnement.<br><br>Cet horizon s’adresse à des élèves ayant un attrait pour les sciences et les métiers qui y sont liés, les démarches et les compétences scientifiques, notamment au niveau expérimental, et qui souhaitent se destiner à des métiers d’ingénierie ou de recherche en biosciences et géosciences et à l’ensemble des formations en lien avec la santé.`,
+                diplomes: `Licences : STAPS ; sciences de la vie ; sciences de la Terre ; sciences de la vie et de la Terre ; sciences pour la santé… Et licences professionnelles : bio-industries et biotechnologies ; industries pharmaceutiques, cosmétologiques et santé ; qualité, hygiène, sécurité, santé, environnement..<br><br>Classes préparatoires scientifiques pour les écoles d'agronomie, les écoles vétérinaires, les écoles d’ingénieurs spécialisés dans le domaine des biotechnologies, des géosciences ou de l’environnement…<br><br>Cursus master en ingénierie (CMI)<br>Diplômes d'écoles d’agronomie, écoles d’ingénieurs en biotechnologies, en sciences de la Terre ou en environnement, écoles vétérinaires, écoles du paysage...<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT génie biologique ; hygiène-sécurité-environnement…<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS bioanalyses en laboratoire de contrôle ; biotechnologies en recherche et en production ; géologie appliquée ; métiers de l’eau ; métiers des services à l’environnement ; métiers du géomètre-topographe et de la modélisation numérique ; bioqualité, BTSA agronomie et cultures durables ; analyses biologiques, biotechnologiques, agricoles et environnementales ; aménagements paysagers ; gestion et maîtrise de l’eau ; gestion et protection de la nature ; gestion forestière ; métiers de l'élevage : développement, production, conseil<br><br>Études paramédicales : DE de technicien de laboratoire médical<br>DEUST environnement et déchets ; production, contrôles et qualité des produits de santé<br>...`,
+                metiers: `<ul><li>Agriculteur / Agricultrice</li><li>Agronome</li><li>Astrophysicien / Astrophysicienne</li><li>Biologiste</li><li>Bioqualiticien / Bioqualiticienne</li><li>Chargé / Chargée hygiène sécurité environnement</li><li>Entraîneur sportif / Entraîneuse sportive</li><li>Géologue</li><li>Géomètre-topographe</li><li>Géotechnicien / Géotechnicienne</li><li>Ingénieur / Ingénieure agronome</li><li>Ingénieur / Ingénieure environnement</li><li>Météorologiste</li><li>Professeur / Professeure des écoles ; Professeur / Professeure de collège et de lycée</li><li>Responsable qualité en agroalimentaire</li><li>Technicien / Technicienne biologiste</li><li>Technicien / Technicienne d'analyses biomédicales</li><li>Technicien / Technicienne en traitement des déchets</li><li>Technicien / Technicienne forage</li><li>Technicien forestier / Technicienne forestière</li><li>Technicien / Technicienne paysagiste</li><li>Vétérinaire</li><li>...</li></ul>`
+            }
+        ,
+            "Sciences éco. & Gestion": {
+                presentation: `Cet horizon rassemble les formations qui ont un lien avec la compréhension des principaux concepts de l’économie et des organisations, en phase avec un environnement national et international. Il est en relation étroite avec toutes les problématiques de fonctionnement d’une entreprise, d’une collectivité territoriale ou d’une administration. Cet horizon est destiné à des élèves ayant une curiosité pour l’actualité économique, aimant le contact humain et disposant de facultés d’analyse et de réflexion.`,
+                diplomes: `Licences : économie et gestion ; administration économique et sociale ; et licences professionnelles : assurance, banque, finance ; commerce et distribution ; gestion des achats et approvisionnements ; logistique ; management des processus logistique ; métiers de la gestion et de la comptabilité ; métiers de l'immobilier ; métiers du marketing opérationnel...<br><br>Classes préparatoires économiques et commerciales voie générale<br><br>Diplôme de comptabilité et de gestion (DCG)<br><br>Diplômes des instituts d'études politiques (IEP)<br><br>Diplômes d'écoles de commerce<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT carrières juridiques ; gestion des entreprises et des administrations ; gestion administrative et commerciale des organisations ; management de la logistique et des transports ; techniques de commercialisation…<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS comptabilité et gestion ; management commercial opérationnel ; commerce international ; négociation et digitalisation de la relation client ; gestion de la PME ; banque ; assurance ; professions immobilières ; gestion des transports et logistique associée ; support à l'action managériale ; conseil et commercialisation de solutions techniques…<br>...`,
+                metiers: `<ul><li>Acheteur / Acheteuse</li><li>Administrateur / Administratrice de biens</li><li>Agent immobilier / Agente immobilière</li><li>Assistant / Assistante en RH (ressources humaines)</li><li>Assistant / Assistante de gestion en PME</li><li>Chargé / Chargée d’études en marketing</li><li>Chargé / Chargée du service client</li><li>Chef / Cheffe de produit</li><li>Chef / Cheffe des ventes ; de rayon</li><li>Collaborateur / Collaboratrice comptable</li><li>Commercial / Commerciale export</li><li>Conseiller / Conseillère clientèle en banque et assurance</li><li>Contrôleur / Contrôleuse de gestion</li><li>Directeur / Directrice RH</li><li>Expert / Experte-comptable</li><li>Gestionnaire de flux</li><li>Gestionnaire de paie</li><li>Inspecteur / Inspectrice des finances</li><li>Marchandiser</li><li>Professeur / Professeure des écoles ; Professeur / Professeure de collège et de lycée</li><li>Rédacteur territorial / Rédactrice territoriale</li><li>Responsable de magasin</li><li>Responsable e-commerce ; de drive</li><li>Responsable SAV (service après-vente)</li><li>Technicien / Technicienne logistique</li><li>Technico-commercial / Technico-commerciale</li><li>...</li></ul>`
+            }
+        ,
+            "Sciences de l'ingénieur": {
+                presentation: `Cet horizon est centré sur la formation en sciences et techniques et les métiers de l'ingénieur. Il correspond notamment aux élèves ayant un goût pour les mathématiques, la physique-chimie, les sciences de l'ingénieur et plus globalement la résolution de problèmes. Il nécessite des capacités d'analyse, de réactivité et de logique.`,
+                diplomes: `Licences : chimie ; électronique-énergie électrique-automatique ; physique ; mathématiques ; mécanique ; génie civil ; sciences pour l'ingénieur ; sciences et technologies... Et licences professionnelles : chimie ; génie des procédés et bioprocédés industriels ; maintenance et technologie ; métiers de l'électronique ; métiers de l'industrie ; métiers de l'instrumentation, de la mesure et du contrôle qualité...<br><br>Classes préparatoires aux grandes écoles d’ingénieurs scientifiques et aux écoles normales supérieures<br><br>Diplômes d'écoles d'ingénieurs généralistes ou spécialisés dans les domaines de l’informatique, la mécanique ou l’électricité, l’optique, l’aéronautique, les télécommunications, les systèmes et réseaux, l’environnement, l’énergie, la chimie, les travaux publics ; les écoles d’architecture (DEEA, DEA architecte)<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT chimie ; génie civil-construction durable ; génie industriel et maintenance ; génie mécanique et productique ; génie électrique et informatique industrielle ; métiers de la transition et de l'efficacité énergétiques ; mesures physiques ; packaging emballage et conditionnement ; qualité logistique industrielle et organisation ; science et génie des matériaux<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS aéronautique ; assistance technique d'ingénieur ; métiers de la mesure ; métiers de l’eau ; métiers du géomètre-topographe et de la modélisation numérique ; métiers de la mesure ; contrôle industriel et régulation automatique ; bâtiment, travaux publics ; conception des processus de réalisation de produits ; conception et réalisation de systèmes automatiques ; conception et industrialisation en microtechniques ; électrotechnique ; conception et réalisation en chaudronnerie industrielle ; fluides-énergies-domotique ; environnement nucléaire ; maintenance des véhicules, maintenance des systèmes ; maintenance des matériels de construction et de manutention ; maritime maintenance des systèmes électro-navals ; pilotage de procédés ; photonique : technologies et sciences de la lumière ; traitement des matériaux ; BTSA gestion et maîtrise de l'eau...<br><br>Cursus master en ingénierie (CMI)
+>...`,
+                metiers: `<ul><li>Architecte</li><li>Automaticien / Automaticienne</li><li>Chargé / Chargée d'affaires en génie mécanique ou électrique</li><li>Conducteur / Conductrice de travaux dans le BTP</li><li>Data scientist</li><li>Domoticien / Domoticienne</li><li>Ingénieur / Ingénieure chimiste</li><li>Ingénieur / Ingénieure de production ou de recherche et développement</li><li>Ingénieur / Ingénieure en environnement</li><li>Ingénieur / Ingénieure en R & D en énergies renouvelables</li><li>Métrologue</li><li>Officier marinier / Officière marinière</li><li>Roboticien / Roboticienne</li><li>Statisticien / Statisticienne</li><li>Technicien / Technicienne analyse</li><li>Technicien / Technicienne en automatisme</li><li>...</li></ul>`
+            }
+        ,
+            "Sciences humaines & Sociales": {
+                presentation: `Cet horizon rassemble les formations axées sur l'étude de l'humain et de son évolution au sein d'une société, selon plusieurs angles d'approche (histoire, philosophie, psychologie, sociologie…) et plusieurs niveaux d'analyse (individu, groupe social…). Cet horizon demande des connaissances historiques, littéraires, en expression écrite et orale et des facultés d'analyse et de réflexion.`,
+                diplomes: `Licences : humanités ; philosophie ; histoire ; géographie et aménagement ; sociologie ; sciences sociales ; science politique ; sciences de l'homme, anthropologie, ethnologie ; psychologie, sciences de l'éducation, sciences sanitaires et sociales… Et licences professionnelles : cartographie, topographie et systèmes d'information géographique ; guide conférencier ; métiers de l'aménagement du territoire et de l'urbanisme ; développement de projets de territoires ; métiers de la GRH ; métiers du conseil et de la formation d'adultes ; métiers de la communication ; métiers de la médiation par des approches artistiques et culturelles ; métiers du livre<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT carrières sociales ; information communication…<br><br>Diplômes des instituts d'études politiques (IEP)<br><br>Classes préparatoires aux grandes écoles et aux écoles normales supérieures<br><br>Diplômes d’État du travail social : éducateur spécialisé ; éducateur de jeunes enfants ; assistant de service social<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS communication ; édition ; études de réalisation d'un projet de communication ; économie sociale familiale ; métiers du géomètre-topographe et de la modélisation numérique…<br>...`,
+                metiers: `<ul><li>Attaché / Attachée d’administration</li><li>Assistant / Assistante en RH (ressources humaines)</li><li>Bibliothécaire</li><li>Cartographe</li><li>Chargé / Chargée de développement local</li><li>Chargé / Chargée des relations publiques</li><li>Conseiller / Conseillère en formation</li><li>Conseiller / Conseillère en environnement</li><li>Conseiller principal / Conseillère principale d’éducation (CPE)</li><li>Conseiller / Conseillère en insertion sociale et professionnelle</li><li>Démographe</li><li>Directeur / Directrice de service environnement</li><li>Documentaliste</li><li>Éducateur / Éducatrice</li><li>Éducateur spécialisé / Éducatrice spécialisée</li><li>Éducateur / Éducatrice de jeunes enfants</li><li>Ergonome</li><li>Guide-conférencier / Guide-conférencière</li><li>Inspecteur / Inspectrice du travail</li><li>Journaliste</li><li>Médiateur culturel / Médiatrice culturelle</li><li>Médiateur familial / Médiatrice familiale</li><li>Professeur / Professeure des écoles ; Professeur / Professeure de collège et de lycée</li><li>Psychologue</li><li>Responsable de projet culturel</li><li>Sociologue</li><li>Urbaniste</li><li>...</li></ul>`
+            }
+        ,
+            "Sport": {
+                presentation: `Cet horizon rassemble des formations centrées sur les métiers de l’enseignement et de l’entraînement sportif, des loisirs, du bien-être, de la protection de la personne, de l’évènementiel sportif. Il concerne des élèves ayant une appétence pour les activités et les métiers en lien avec le sport et le corps.`,
+                diplomes: `DE de sport : BPJEPS, DEJEPS (seulement quelques places disponibles sur Parcoursup), DESJEPS<br><br>Licence STAPS ; parcours d'accès spécifique santé (PASS), licence avec option accès santé (L.AS). Et licences professionnelles : animation, gestion et organisation des activités physiques et sportives ; intervention sociale : développement social et médiation par le sport ; métiers de la forme ; tourisme et loisirs sportifs ; gestion et développement des organisations, des services sportifs et de loisirs ; santé, vieillissement et activités physiques adaptées<br><br>BTS (à noter : un nombre de places en BTS est priorisé pour les bacheliers professionnels) : BTS tourisme ; BTSA développement et animation de projets territoriaux<br><br>BUT (à noter : un nombre de places en BUT est priorisé pour les bacheliers technologiques) : BUT gestion administrative et commerciale des organisations parcours management des activités culturelles, artistiques, sportives et de tourisme<br><br>Études paramédicales : DE masseur-kinésithérapeute ; ergothérapeute<br><br>Diplômes d'écoles de commerce<br><br>Diplômes d'écoles d'ingénieurs<br><br>DEUST animation et gestion des activités physiques, sportives ou culturelles ; métiers de la forme ; activités physiques et sportives adaptées : déficiences intellectuelles, troubles psychiques ; activités physiques et sportives et inadaptations sociales ; pratique et gestion des activités physiques et sportives et de loisirs : publics seniors`,
+                metiers: `<ul><li>Animateur / Animatrice d'activités physiques et sportives pour tous</li><li>Conseiller sportif / Conseillère sportive en salle de remise en forme</li><li>Directeur sportif / Directrice sportive</li><li>Directeur / Directrice de magasin de sport</li><li>Éducateur sportif / Éducatrice sportive - Coach sportif/sportive</li><li>Entraîneur sportif / Entraîneuse sportive</li><li>Enseignant / Enseignante d’Éducation physique et sportive - Professeur / Professeure d'EPS</li><li>Ergonome du sport</li><li>Ergothérapeute</li><li>E-sportif / E-sportive</li><li>Gestionnaire du sport</li><li>Ingénieur / Ingénieure recherche et développement en sport</li><li>Officier / Officière de gendarmerie</li><li>Professeur / Professeure des écoles</li><li>Masseur / Masseuse-kinésithérapeute</li><li>Responsable de marketing sportif</li><li>Sous-officier / Sous-officière de l'armée de terre</li><li>Sous-officier / Sous-officière de l'armée de l'air</li></ul>`
+            }
+        };
+
+        let selectedSpecs = [];
+
+        // --- LOGIQUE ---
+
+        // Génère la paire possible à partir de 2 choix
+        function getPairs(specs) {
+            if (specs.length !== 2) return [];
+            return [
+                [specs[0], specs[1]] // unique paire
+            ];
+        }
+
+        // Calcule le score % pour une paire donnée dans un domaine donné
+        function calculatePairScore(pairKeys, domainIndex) {
+            const spec1 = SPECIALITES[pairKeys[0]];
+            const spec2 = SPECIALITES[pairKeys[1]];
+            
+            const score1 = spec1.scores[domainIndex];
+            const score2 = spec2.scores[domainIndex];
+            
+            // Max possible par matière = 6, donc max total = 12
+            const total = score1 + score2;
+            const percent = (total / 12) * 100;
+            
+            return Math.round(percent);
+        }
+
+        // --- INTERFACE ---
+
+        const containerSpecs = document.getElementById('specs-container');
+        const containerResults = document.getElementById('results-container');
+        const legendArea = document.getElementById('legend-area');
+
+        function init() {
+            renderButtons();
+        }
+
+        function renderButtons() {
+            containerSpecs.innerHTML = '';
+            Object.keys(SPECIALITES).forEach(key => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-spec';
+                if (selectedSpecs.includes(key)) btn.classList.add('selected');
+                if (selectedSpecs.length >= 2 && !selectedSpecs.includes(key)) btn.disabled = true;
+                
+                btn.textContent = SPECIALITES[key].label;
+                btn.onclick = () => toggleSpec(key);
+                containerSpecs.appendChild(btn);
+            });
+        }
+
+        function toggleSpec(key) {
+            const index = selectedSpecs.indexOf(key);
+            if (index > -1) {
+                selectedSpecs.splice(index, 1);
+            } else {
+                if (selectedSpecs.length < 2) selectedSpecs.push(key);
+            }
+            renderButtons();
+            updateResults();
+        }
+
+        function updateResults() {
+            if (selectedSpecs.length !== 2) {
+                legendArea.style.display = 'none';
+                containerResults.innerHTML = `<div class="alert-msg">Sélectionnez encore ${2 - selectedSpecs.length} spécialité(s).</div>`;
+                return;
+            }
+
+            // 1. Générer les paires
+            const pairs = getPairs(selectedSpecs);
+            
+            // 2. Afficher la légende
+            legendArea.style.display = 'flex';
+            legendArea.innerHTML = pairs.map((pair, idx) => `
+                <div class="legend-item">
+                    <span class="dot c${idx+1}"></span>
+                    ${SPECIALITES[pair[0]].label.split('(')[0]} + ${SPECIALITES[pair[1]].label.split('(')[0]}
+                </div>
+            `).join('');
+
+            // 3. Calculer et afficher les barres
+            containerResults.innerHTML = '';
+
+            // Calculer les scores agrégés par domaine (somme des 3 spécialités)
+            const domainAggregates = DOMAINES.map((name, idx) => {
+                const sum = selectedSpecs.reduce((acc, key) => acc + SPECIALITES[key].scores[idx], 0);
+                const percent = Math.round((sum / (6 * selectedSpecs.length)) * 100);
+                return { name, idx, sum, percent };
+            });
+
+            // Trier et préparer la recommandation (top 3)
+            const sorted = [...domainAggregates].sort((a,b) => b.percent - a.percent);
+            const top = sorted[0];
+
+            // Afficher le bloc de recommandation
+            const recBox = document.createElement('div');
+            recBox.className = 'recommendation-box';
+            recBox.innerHTML = `<strong>Domaine le plus recommandé :</strong> <button class="rec-link" data-domain-index="${top.idx}">${top.name}</button> (${top.percent}%)` +
+                `<div class="rec-list">Top 3 : ${sorted.slice(0,3).map(d => `${d.name} (${d.percent}%)`).join(' — ')}</div>`;
+            // Cliquer sur le domaine recommandé fait défiler et ouvre la fiche correspondante si existante
+            recBox.addEventListener('click', (ev) => {
+                const btn = ev.target.closest('.rec-link');
+                if (!btn) return;
+                const domainName = btn.textContent;
+                // Trouver la ligne correspondante
+                const rows = containerResults.querySelectorAll('.domain-row');
+                for (const r of rows) {
+                    const nameEl = r.querySelector('.domain-name');
+                    if (nameEl && nameEl.textContent === domainName) {
+                        r.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        const details = r.querySelector('.domain-details');
+                        const actionBtn = r.querySelector('.btn-details');
+                        if (details && actionBtn && details.style.display === 'none') actionBtn.click();
+                        break;
+                    }
+                }
+            });
+            containerResults.appendChild(recBox);
+
+            DOMAINES.forEach((domaineName, domainIndex) => {
+                // Calcul des 3 scores pour ce domaine
+                const scores = pairs.map(pair => calculatePairScore(pair, domainIndex));
+
+                // Création HTML
+                const row = document.createElement('div');
+                row.className = 'domain-row';
+                
+                let barsHtml = '';
+                scores.forEach((score, idx) => {
+                    barsHtml += `
+                        <div style="display:flex; align-items:center;">
+                            <div class="bar-container">
+                                <div class="bar-fill p${idx+1}" style="width: ${score}%"></div>
+                            </div>
+                            <span class="score-text">${score}%</span>
+                        </div>
+                    `;
+                });
+
+                row.innerHTML = `
+                    <div class="domain-name">${domaineName}</div>
+                    <div class="bars-group">
+                        ${barsHtml}
+                    </div>
+                `;
+
+                // Si nous avons des informations détaillées pour ce domaine, ajouter un bouton et une zone repliable
+                const info = DOMAINES_INFO[domaineName];
+                if (info) {
+                    const actions = document.createElement('div');
+                    actions.className = 'domain-actions';
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-details';
+                    btn.textContent = 'En savoir plus';
+                    actions.appendChild(btn);
+
+                    // Placer le bouton sous les barres (dans .bars-group) pour éviter de déformer la ligne
+                    const barsGroup = row.querySelector('.bars-group');
+                    if (barsGroup) barsGroup.appendChild(actions);
+
+                    const details = document.createElement('div');
+                    details.className = 'domain-details';
+                    details.style.display = 'none';
+                    details.innerHTML = `<h4>Présentation</h4><p>${info.presentation}</p><h4>Diplômes</h4><p>${info.diplomes}</p><h4>Métiers</h4>${info.metiers}`;
+                    if (barsGroup) barsGroup.appendChild(details);
+
+                    btn.onclick = () => {
+                        const opened = details.style.display !== 'none';
+                        details.style.display = opened ? 'none' : 'block';
+                        btn.textContent = opened ? 'En savoir plus' : 'Réduire';
+                    };
+                }
+
+                containerResults.appendChild(row);
+            });
+        }
+
+        init();
+
+        // Ensure legend is hidden initially (moved from inline style)
+        legendArea.style.display = 'none';
+    </script>
+
+
+</body></html>
